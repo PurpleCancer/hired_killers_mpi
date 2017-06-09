@@ -1,9 +1,9 @@
 MPICC?=mpic++
 
-all: main
-
+all: main clean
+ 
 main: main.cpp request company
-	${MPICC} main.cpp -o main CompanyRequest.o Company.o
+	${MPICC} main.cpp -o main.out CompanyRequest.o Company.o
 
 request: CompanyRequest.cpp CompanyRequest.hpp
 	g++ -c CompanyRequest.cpp
@@ -12,4 +12,4 @@ company: Company.cpp Company.hpp
 	g++ -c Company.cpp
 
 clean:
-	rm CompanyRequest.o Company.o
+	rm -f CompanyRequest.o Company.o
