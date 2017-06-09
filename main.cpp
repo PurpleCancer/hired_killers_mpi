@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <iostream>
 #include <mpi.h>
+#include "CompanyRequest.hpp"
 
 using namespace std;
 
