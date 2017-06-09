@@ -2,6 +2,7 @@
 #include <iostream>
 #include <mpi.h>
 #include "CompanyRequest.hpp"
+#include "Company.hpp"
 
 using namespace std;
 

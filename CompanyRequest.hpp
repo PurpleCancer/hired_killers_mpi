@@ -4,12 +4,13 @@
 class CompanyRequest 
 {
     int ClockValue;
-    int ProccessId;
+    int ProcessId;
 
 public:
     CompanyRequest(int clock, int pid);
     bool operator < (const CompanyRequest & req);
     bool operator > (const CompanyRequest & req);
+    int getProcessId();
 };
 
 #endif
