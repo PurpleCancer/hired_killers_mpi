@@ -20,6 +20,7 @@ class Company
 
 public:
     Company(int killers);
+    Company(int killers, int seed);
     double getRating();
     void rate(int rating);
     int getKillers();

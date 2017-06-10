@@ -18,6 +18,23 @@ Company::Company(int killers)
     }
 }
 
+Company::Company(int killers, int seed)
+{
+    this->numberOfKillers = killers;
+
+    srand(seed);
+    this->numberOfRatings = 0;
+    this->averageRating = 0;
+    int targetRatings = rand()%(MAX_NO_OF_STARTING_RATINGS - 1) + 1;
+    for (int i = 0; i < targetRatings; ++i)
+    while (this->numberOfRatings < targetRatings)
+    {
+        int rating = rand()%5 + 1;
+        this->averageRating = this->averageRating + \
+            (((double)rating - this->averageRating)/((double)++this->numberOfRatings));
+    }
+}
+
 double Company::getRating()
 {
     return this->averageRating;
