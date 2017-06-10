@@ -7,14 +7,15 @@
 #define MAX_NUMBER_OF_KILLERS 4
 
 
-#define QUEUE   0
-#define DEQUEUE 1
-#define TAKE    2
-#define RETURN  3
-#define ACK     4
+#define MSG_QUEUE   0
+#define MSG_DEQUEUE 1
+#define MSG_TAKE    2
+#define MSG_RETURN  3
+#define MSG_ACK     4
 
 struct message_data
 {
     int companyId;
     int rating;
+    int lamportClock;
 };

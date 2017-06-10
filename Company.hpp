@@ -25,7 +25,9 @@ public:
     void rate(int rating);
     int getKillers();
     void takeKiller(int proccessId);
+    void returnKiller();
     void addToQueue(CompanyRequest request);
+    void removeFromQueue(int processId);
     int getQueuePosition(int processId);
     bool getFlag();
     void setFlag(bool flag);

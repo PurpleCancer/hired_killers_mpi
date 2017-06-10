@@ -11,24 +11,143 @@
 
 using namespace std;
 
+int numberOfCompanies;
+vector<Company *> companies;
+
+int lamportClock;
+vector<int> lamportVector;
+
+pthread_mutex_t lamportClockMutex   = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t lamportVectorMutex  = PTHREAD_MUTEX_INITIALIZER;
+vector<pthread_mutex_t> companyMutex;
+
+void *receiverFunction(void * arg)
+{
+    message_data data;
+    MPI_Status status;
+
+    while(true)
+    {
+        MPI_Recv(&data, sizeof(message_data), MPI_BYTE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+        switch (status.MPI_TAG)
+        {
+            case MSG_QUEUE:
+                pthread_mutex_lock(&lamportClockMutex);
+                pthread_mutex_lock(&lamportVectorMutex);
+                pthread_mutex_lock(&companyMutex[data.companyId]);
+
+                if (data.lamportClock > lamportClock)
+                    lamportClock = data.lamportClock;
+                lamportClock++;
+
+                lamportVector[status.MPI_SOURCE] = data.lamportClock;
+                
+                companies[data.companyId]->addToQueue(*(new CompanyRequest(data.lamportClock, status.MPI_SOURCE)));
+                companies[data.companyId]->setFlag(true);
+
+                data.lamportClock = ++lamportClock;
+                MPI_Send(&data, sizeof(message_data), MPI_BYTE, status.MPI_SOURCE, MSG_ACK, MPI_COMM_WORLD);
+
+                pthread_mutex_unlock(&companyMutex[data.companyId]);
+                pthread_mutex_unlock(&lamportVectorMutex);
+                pthread_mutex_unlock(&lamportClockMutex);
+                break;
+            case MSG_DEQUEUE:
+                pthread_mutex_lock(&lamportClockMutex);
+                pthread_mutex_lock(&lamportVectorMutex);
+                pthread_mutex_lock(&companyMutex[data.companyId]);
+
+                if (data.lamportClock > lamportClock)
+                    lamportClock = data.lamportClock;
+                lamportClock++;
+
+                lamportVector[status.MPI_SOURCE] = data.lamportClock;
+
+                companies[data.companyId]->removeFromQueue(status.MPI_SOURCE);
+                companies[data.companyId]->setFlag(true);
+
+                pthread_mutex_unlock(&companyMutex[data.companyId]);
+                pthread_mutex_unlock(&lamportVectorMutex);
+                pthread_mutex_unlock(&lamportClockMutex);
+                break;
+            case MSG_TAKE:
+                pthread_mutex_lock(&lamportClockMutex);
+                pthread_mutex_lock(&lamportVectorMutex);
+                pthread_mutex_lock(&companyMutex[data.companyId]);
+
+                if (data.lamportClock > lamportClock)
+                    lamportClock = data.lamportClock;
+                lamportClock++;
+
+                lamportVector[status.MPI_SOURCE] = data.lamportClock;
+
+                companies[data.companyId]->takeKiller(status.MPI_SOURCE);
+                companies[data.companyId]->setFlag(true);
+
+                pthread_mutex_unlock(&companyMutex[data.companyId]);
+                pthread_mutex_unlock(&lamportVectorMutex);
+                pthread_mutex_unlock(&lamportClockMutex);
+                break;
+            case MSG_RETURN:
+                pthread_mutex_lock(&lamportClockMutex);
+                pthread_mutex_lock(&lamportVectorMutex);
+                pthread_mutex_lock(&companyMutex[data.companyId]);
+
+                if (data.lamportClock > lamportClock)
+                    lamportClock = data.lamportClock;
+                lamportClock++;
+
+                lamportVector[status.MPI_SOURCE] = data.lamportClock;
+
+                companies[data.companyId]->returnKiller();
+                companies[data.companyId]->rate(data.rating);
+                companies[data.companyId]->setFlag(true);
+
+                pthread_mutex_unlock(&companyMutex[data.companyId]);
+                pthread_mutex_unlock(&lamportVectorMutex);
+                pthread_mutex_unlock(&lamportClockMutex);
+                break;
+            case MSG_ACK:
+                pthread_mutex_lock(&lamportClockMutex);
+                pthread_mutex_lock(&lamportVectorMutex);
+
+                if (data.lamportClock > lamportClock)
+                    lamportClock = data.lamportClock;
+                lamportClock++;
+
+                lamportVector[status.MPI_SOURCE] = data.lamportClock;
+
+                pthread_mutex_unlock(&lamportVectorMutex);
+                pthread_mutex_unlock(&lamportClockMutex);
+                break;
+            default:
+                cout<<"Bad message tag."<<endl;
+                break;
+        }
+    }
+
+    return NULL;
+}
+
+
 int main(int argc, char ** argv)
 {
     int size, rank;
-
-    int numberOfCompanies;
-    vector<Company *> companies;
 
     MPI_Init(&argc, &argv);
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int lamportClock = 0;
-    vector<int> lamportVector (size, 0);
+    lamportClock = 0;
+    for (int i = 0; i < size; ++i)
+        lamportVector.push_back(0);
 
-    pthread_mutex_t lamportClockMutex   = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t lamportVectorMutex  = PTHREAD_MUTEX_INITIALIZER;
-    vector<pthread_mutex_t> companyMutex;
+    lamportClockMutex   = PTHREAD_MUTEX_INITIALIZER;
+    lamportVectorMutex  = PTHREAD_MUTEX_INITIALIZER;
+
+    pthread_t receiver_thread;
     
 
     // Initialization
@@ -59,7 +178,7 @@ int main(int argc, char ** argv)
             companyMutex.push_back(PTHREAD_MUTEX_INITIALIZER);
         }
 
-
+        pthread_create(&receiver_thread, NULL, &receiverFunction, NULL);
 
         MPI_Barrier(MPI_COMM_WORLD);
     }

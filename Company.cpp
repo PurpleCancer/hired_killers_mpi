@@ -65,6 +65,11 @@ void Company::takeKiller(int processId)
     this->numberOfKillers--;
 }
 
+void Company::returnKiller()
+{
+    this->numberOfKillers++;
+}
+
 void Company::addToQueue(CompanyRequest request)
 {
     for (list<CompanyRequest>::iterator it = requestsList.begin(); it != requestsList.end(); ++it)
@@ -77,6 +82,18 @@ void Company::addToQueue(CompanyRequest request)
     }
 
     requestsList.push_back(request);
+}
+
+void Company::removeFromQueue(int processId)
+{
+    for (list<CompanyRequest>::iterator it = requestsList.begin(); it != requestsList.end(); ++it)
+    {
+        if ((*it).getProcessId() == processId)
+        {
+            requestsList.erase(it);
+            break;
+        }
+    }
 }
 
 int Company::getQueuePosition(int processId)
