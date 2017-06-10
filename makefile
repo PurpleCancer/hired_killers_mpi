@@ -3,7 +3,7 @@ MPICC?=mpic++
 all: main clean
  
 main: main.cpp request company
-	${MPICC} main.cpp -o main.out CompanyRequest.o Company.o
+	${MPICC} main.cpp -std=c++11 -o main.out CompanyRequest.o Company.o
 
 request: CompanyRequest.cpp CompanyRequest.hpp
 	g++ -c CompanyRequest.cpp

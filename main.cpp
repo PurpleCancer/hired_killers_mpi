@@ -4,6 +4,7 @@
 #include <mpi.h>
 #include <ctime>
 #include <vector>
+#include <pthread.h>
 #include "CompanyRequest.hpp"
 #include "Company.hpp"
 #include "Definitions.hpp"
@@ -21,6 +22,14 @@ int main(int argc, char ** argv)
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int lamportClock = 0;
+    vector<int> lamportVector (size, 0);
+
+    pthread_mutex_t lamportClockMutex   = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t lamportVectorMutex  = PTHREAD_MUTEX_INITIALIZER;
+    vector<pthread_mutex_t> companyMutex;
+    
 
     // Initialization
     {    
@@ -47,13 +56,16 @@ int main(int argc, char ** argv)
             int killers = rand()%(MAX_NUMBER_OF_KILLERS - MIN_NUMBER_OF_KILLERS + 1) + MIN_NUMBER_OF_KILLERS;
             int seed = rand();
             companies.push_back(new Company(killers, seed));
+            companyMutex.push_back(PTHREAD_MUTEX_INITIALIZER);
         }
+
+
 
         MPI_Barrier(MPI_COMM_WORLD);
     }
     
     //Algorithm
-    
+
 
     MPI_Finalize();
     
