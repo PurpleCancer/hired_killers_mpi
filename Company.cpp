@@ -16,6 +16,8 @@ Company::Company(int killers)
         this->averageRating = this->averageRating + \
             (((double)rating - this->averageRating)/((double)++this->numberOfRatings));
     }
+
+    this->flag = true;
 }
 
 Company::Company(int killers, int seed)
@@ -33,6 +35,8 @@ Company::Company(int killers, int seed)
         this->averageRating = this->averageRating + \
             (((double)rating - this->averageRating)/((double)++this->numberOfRatings));
     }
+
+    this->flag = true;
 }
 
 double Company::getRating()

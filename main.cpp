@@ -11,16 +11,22 @@
 
 using namespace std;
 
+// data shared between threads
+
 int numberOfCompanies;
 vector<Company *> companies;
+int setFlags;
 
 int lamportClock;
 vector<int> lamportVector;
+bool lamportVectorChangeFlag;
 
 pthread_mutex_t lamportClockMutex   = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t lamportVectorMutex  = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t setFlagsMutex       = PTHREAD_MUTEX_INITIALIZER;
 vector<pthread_mutex_t> companyMutex;
 
+// function of the message receiving thread
 void *receiverFunction(void * arg)
 {
     message_data data;
@@ -36,6 +42,7 @@ void *receiverFunction(void * arg)
                 pthread_mutex_lock(&lamportClockMutex);
                 pthread_mutex_lock(&lamportVectorMutex);
                 pthread_mutex_lock(&companyMutex[data.companyId]);
+                pthread_mutex_lock(&setFlagsMutex);
 
                 if (data.lamportClock > lamportClock)
                     lamportClock = data.lamportClock;
@@ -44,11 +51,16 @@ void *receiverFunction(void * arg)
                 lamportVector[status.MPI_SOURCE] = data.lamportClock;
                 
                 companies[data.companyId]->addToQueue(*(new CompanyRequest(data.lamportClock, status.MPI_SOURCE)));
+                if (companies[data.companyId]->getFlag())
+                    setFlags++;
                 companies[data.companyId]->setFlag(true);
+
+                lamportVectorChangeFlag = true;
 
                 data.lamportClock = ++lamportClock;
                 MPI_Send(&data, sizeof(message_data), MPI_BYTE, status.MPI_SOURCE, MSG_ACK, MPI_COMM_WORLD);
 
+                pthread_mutex_unlock(&setFlagsMutex);
                 pthread_mutex_unlock(&companyMutex[data.companyId]);
                 pthread_mutex_unlock(&lamportVectorMutex);
                 pthread_mutex_unlock(&lamportClockMutex);
@@ -57,6 +69,7 @@ void *receiverFunction(void * arg)
                 pthread_mutex_lock(&lamportClockMutex);
                 pthread_mutex_lock(&lamportVectorMutex);
                 pthread_mutex_lock(&companyMutex[data.companyId]);
+                pthread_mutex_lock(&setFlagsMutex);
 
                 if (data.lamportClock > lamportClock)
                     lamportClock = data.lamportClock;
@@ -65,8 +78,13 @@ void *receiverFunction(void * arg)
                 lamportVector[status.MPI_SOURCE] = data.lamportClock;
 
                 companies[data.companyId]->removeFromQueue(status.MPI_SOURCE);
+                if (companies[data.companyId]->getFlag())
+                    setFlags++;
                 companies[data.companyId]->setFlag(true);
 
+                lamportVectorChangeFlag = true;
+
+                pthread_mutex_unlock(&setFlagsMutex);
                 pthread_mutex_unlock(&companyMutex[data.companyId]);
                 pthread_mutex_unlock(&lamportVectorMutex);
                 pthread_mutex_unlock(&lamportClockMutex);
@@ -75,6 +93,7 @@ void *receiverFunction(void * arg)
                 pthread_mutex_lock(&lamportClockMutex);
                 pthread_mutex_lock(&lamportVectorMutex);
                 pthread_mutex_lock(&companyMutex[data.companyId]);
+                pthread_mutex_lock(&setFlagsMutex);
 
                 if (data.lamportClock > lamportClock)
                     lamportClock = data.lamportClock;
@@ -83,8 +102,13 @@ void *receiverFunction(void * arg)
                 lamportVector[status.MPI_SOURCE] = data.lamportClock;
 
                 companies[data.companyId]->takeKiller(status.MPI_SOURCE);
+                if (companies[data.companyId]->getFlag())
+                    setFlags++;
                 companies[data.companyId]->setFlag(true);
 
+                lamportVectorChangeFlag = true;
+
+                pthread_mutex_unlock(&setFlagsMutex);
                 pthread_mutex_unlock(&companyMutex[data.companyId]);
                 pthread_mutex_unlock(&lamportVectorMutex);
                 pthread_mutex_unlock(&lamportClockMutex);
@@ -93,6 +117,7 @@ void *receiverFunction(void * arg)
                 pthread_mutex_lock(&lamportClockMutex);
                 pthread_mutex_lock(&lamportVectorMutex);
                 pthread_mutex_lock(&companyMutex[data.companyId]);
+                pthread_mutex_lock(&setFlagsMutex);
 
                 if (data.lamportClock > lamportClock)
                     lamportClock = data.lamportClock;
@@ -102,8 +127,13 @@ void *receiverFunction(void * arg)
 
                 companies[data.companyId]->returnKiller();
                 companies[data.companyId]->rate(data.rating);
+                if (companies[data.companyId]->getFlag())
+                    setFlags++;
                 companies[data.companyId]->setFlag(true);
 
+                lamportVectorChangeFlag = true;
+
+                pthread_mutex_unlock(&setFlagsMutex);
                 pthread_mutex_unlock(&companyMutex[data.companyId]);
                 pthread_mutex_unlock(&lamportVectorMutex);
                 pthread_mutex_unlock(&lamportClockMutex);
@@ -111,6 +141,7 @@ void *receiverFunction(void * arg)
             case MSG_ACK:
                 pthread_mutex_lock(&lamportClockMutex);
                 pthread_mutex_lock(&lamportVectorMutex);
+                pthread_mutex_lock(&setFlagsMutex);
 
                 if (data.lamportClock > lamportClock)
                     lamportClock = data.lamportClock;
@@ -118,6 +149,9 @@ void *receiverFunction(void * arg)
 
                 lamportVector[status.MPI_SOURCE] = data.lamportClock;
 
+                lamportVectorChangeFlag = true;
+
+                pthread_mutex_unlock(&setFlagsMutex);
                 pthread_mutex_unlock(&lamportVectorMutex);
                 pthread_mutex_unlock(&lamportClockMutex);
                 break;
@@ -177,6 +211,9 @@ int main(int argc, char ** argv)
             companies.push_back(new Company(killers, seed));
             companyMutex.push_back(PTHREAD_MUTEX_INITIALIZER);
         }
+
+        setFlags = numberOfCompanies;
+        lamportVectorChangeFlag = true;
 
         pthread_create(&receiver_thread, NULL, &receiverFunction, NULL);
 
