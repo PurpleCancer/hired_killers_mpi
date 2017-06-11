@@ -26,3 +26,8 @@ int CompanyRequest::getProcessId()
 {
     return this->ProcessId;
 }
+
+int CompanyRequest::getClock()
+{
+    return this->ClockValue;
+}

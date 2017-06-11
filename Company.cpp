@@ -113,6 +113,18 @@ int Company::getQueuePosition(int processId)
     return -1;
 }
 
+int Company::getQueueClock(int processId)
+{
+    for (list<CompanyRequest>::iterator it = requestsList.begin(); it != requestsList.end(); ++it)
+    {
+        if ((*it).getProcessId() == processId)
+        {
+            it->getClock();
+        }
+    }
+    return -1;
+}
+
 bool Company::getFlag()
 {
     return this->flag;

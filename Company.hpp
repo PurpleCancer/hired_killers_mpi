@@ -29,6 +29,7 @@ public:
     void addToQueue(CompanyRequest request);
     void removeFromQueue(int processId);
     int getQueuePosition(int processId);
+    int getQueueClock(int processId);
     bool getFlag();
     void setFlag(bool flag);
 };

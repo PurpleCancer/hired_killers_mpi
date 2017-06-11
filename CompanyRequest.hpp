@@ -11,6 +11,7 @@ public:
     bool operator < (const CompanyRequest & req);
     bool operator > (const CompanyRequest & req);
     int getProcessId();
+    int getClock();
 };
 
 #endif
