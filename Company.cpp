@@ -62,11 +62,10 @@ void Company::takeKiller(int processId)
         if ((*it).getProcessId() == processId)
         {
             requestsList.erase(it);
+            this->numberOfKillers--;
             break;
         }
     }
-
-    this->numberOfKillers--;
 }
 
 void Company::returnKiller()
@@ -119,7 +118,7 @@ int Company::getQueueClock(int processId)
     {
         if ((*it).getProcessId() == processId)
         {
-            it->getClock();
+            return it->getClock();
         }
     }
     return -1;

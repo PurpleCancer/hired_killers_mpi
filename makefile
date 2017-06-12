@@ -1,6 +1,6 @@
 MPICC?=mpic++
 
-all: main clean
+all: main
  
 main: main.cpp request company rank
 	${MPICC} main.cpp -lpthread -std=c++11 -o main.out CompanyRequest.o Company.o CompanyRank.o

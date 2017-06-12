@@ -25,10 +25,10 @@ int lamportClock;
 vector<int> lamportVector;
 bool lamportVectorChangeFlag;
 
-pthread_mutex_t lamportClockMutex   = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t lamportVectorMutex  = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t setFlagsMutex       = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t companyMutex        = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t lamportClockMutex;
+pthread_mutex_t lamportVectorMutex;
+pthread_mutex_t setFlagsMutex;
+pthread_mutex_t companyMutex;
 // vector<pthread_mutex_t> companyMutex;
 
 // function of the message receiving thread
@@ -196,6 +196,8 @@ int main(int argc, char ** argv)
 
     lamportClockMutex   = PTHREAD_MUTEX_INITIALIZER;
     lamportVectorMutex  = PTHREAD_MUTEX_INITIALIZER;
+    setFlagsMutex       = PTHREAD_MUTEX_INITIALIZER;
+    companyMutex        = PTHREAD_MUTEX_INITIALIZER;
 
     pthread_t receiver_thread;
     
@@ -324,12 +326,11 @@ int main(int argc, char ** argv)
                     //     setFlags--;
                     // companies[companyId]->setFlag(false);
 
-                    pthread_mutex_unlock(&lamportClockMutex);
-
 
                     printf("Proces %i, zegar %i: kolejkuje sie u firmy %i\n", mpi_rank, lamportClock, companyId);
 
-                    pthread_mutex_unlock(&setFlagsMutex);
+                    pthread_mutex_unlock(&lamportClockMutex);
+                    pthread_mutex_unlock(&setFlagsMutex);        
                     pthread_mutex_unlock(&companyMutex);
 
                     break;
@@ -364,7 +365,7 @@ int main(int argc, char ** argv)
                     }
                     
                     // take killer
-                    if (companies[companyId]->getQueuePosition(mpi_rank) < companies[companyId]->getKillers() - companiesWithoutReply)
+                    if (companies[companyId]->getQueuePosition(mpi_rank) < companies[companyId]->getKillers() - companiesWithoutReply + 1)
                     {
                         lamportClock++;
                         
@@ -380,11 +381,13 @@ int main(int argc, char ** argv)
                                 MPI_Send(&data, sizeof(message_data), MPI_BYTE, i, MSG_TAKE, MPI_COMM_WORLD);
                             }
                         }
-                        companies[companyId]->takeKiller(mpi_rank);
 
                         killersCompany = companyId;
 
                         printf("Proces %i, zegar %i: wynajmuje zabojce od firmy %i\n", mpi_rank, lamportClock, killersCompany);
+
+                        companies[companyId]->takeKiller(mpi_rank);
+
                         
                         // dequeue from other queues
                         for (int i = 0; i < numberOfCompanies; ++i)
@@ -461,6 +464,11 @@ int main(int argc, char ** argv)
 
                         break;
                     }
+
+                    pthread_mutex_unlock(&lamportVectorMutex);
+                    pthread_mutex_unlock(&lamportClockMutex);
+                    pthread_mutex_unlock(&setFlagsMutex);
+                    pthread_mutex_unlock(&companyMutex);
                 }
 
                 
