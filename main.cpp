@@ -206,8 +206,8 @@ int main(int argc, char ** argv)
         // Randomize initial values
         if (mpi_rank == ROOT)
         {
-            //srand(time(0));
-            srand(12345);
+            srand(time(0));
+            //srand(12345);
             if (NUMBER_OF_COMPANIES == 0)
                 numberOfCompanies = rand()%(MAX_NUMBER_OF_COMPANIES - 1) + 1;
             else
@@ -226,7 +226,8 @@ int main(int argc, char ** argv)
             int killers = rand()%(MAX_NUMBER_OF_KILLERS - MIN_NUMBER_OF_KILLERS + 1) + MIN_NUMBER_OF_KILLERS;
             int seed = rand();
             companies.push_back(new Company(killers, seed));
-            //printf("Firma %i, %i zabojcow\n", i, companies[i]->getKillers());
+            if (mpi_rank == 0)
+                printf("Firma %i, %i zabojcow\n", i, companies[i]->getKillers());
         }
 
         setFlags = numberOfCompanies;
@@ -381,9 +382,9 @@ int main(int argc, char ** argv)
                         }
                         companies[companyId]->takeKiller(mpi_rank);
 
-                        printf("Proces %i, zegar %i: wynajmuje zabojce od firmy %i\n", mpi_rank, lamportClock, companyId);
-
                         killersCompany = companyId;
+
+                        printf("Proces %i, zegar %i: wynajmuje zabojce od firmy %i\n", mpi_rank, lamportClock, killersCompany);
                         
                         // dequeue from other queues
                         for (int i = 0; i < numberOfCompanies; ++i)
@@ -457,8 +458,6 @@ int main(int argc, char ** argv)
                         pthread_mutex_unlock(&lamportClockMutex);
                         pthread_mutex_unlock(&setFlagsMutex);
                         pthread_mutex_unlock(&companyMutex);
-
-                        notFound = false;
 
                         break;
                     }
