@@ -282,11 +282,6 @@ int main(int argc, char ** argv)
             while (setFlags == 0)
                 usleep(100000);
 
-                // pthread_mutex_lock(&companyMutex[data.companyId]);
-                // pthread_mutex_lock(&setFlagsMutex);
-                // pthread_mutex_lock(&lamportClockMutex);
-                // pthread_mutex_lock(&lamportVectorMutex);
-
             for (vector<CompanyRank>::iterator it = rankedCompanies.begin(); it != rankedCompanies.end(); ++it)
             {
                 int companyId = it->getCompanyId();
@@ -322,9 +317,9 @@ int main(int argc, char ** argv)
                     }
 
                     companies[companyId]->addToQueue(*(new CompanyRequest(lamportClock, mpi_rank)));
-                    // if (companies[companyId]->getFlag())
-                    //     setFlags--;
-                    // companies[companyId]->setFlag(false);
+                    if (companies[companyId]->getFlag())
+                        setFlags--;
+                    companies[companyId]->setFlag(false);
 
 
                     printf("Proces %i, zegar %i: kolejkuje sie u firmy %i\n", mpi_rank, lamportClock, companyId);
